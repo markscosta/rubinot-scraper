@@ -45,35 +45,60 @@ class RubinOTScraper {
   }
 
   parseDeathsHTML(html) {
-    const cheerio = require('cheerio');
-    const $ = cheerio.load(html);
-    const deaths = [];
+  const cheerio = require('cheerio');
+  const $ = cheerio.load(html);
+  const deaths = [];
 
-    $('table tr').each((i, element) => {
-      if (i === 0) return; // Skip header
+  console.log('=== DEBUG: HTML PARSING ===');
+  console.log('HTML length:', html.length);
+  console.log('Page title:', $('title').text());
+  
+  // Debug: Look for any tables
+  const allTables = $('table');
+  console.log('Found tables:', allTables.length);
+  
+  // Debug: Look for any text containing death-related keywords
+  const pageText = $('body').text().toLowerCase();
+  const hasDeathKeywords = ['death', 'died', 'kill', 'slain'].some(keyword => pageText.includes(keyword));
+  console.log('Page contains death keywords:', hasDeathKeywords);
+  
+  // Debug: Show first 500 characters of body text
+  console.log('Page content preview:', $('body').text().substring(0, 500));
+
+  $('table tr').each((i, element) => {
+    const cells = $(element).find('td');
+    
+    // Debug: Log first few rows
+    if (i < 5) {
+      const cellTexts = [];
+      cells.each((j, cell) => cellTexts.push($(cell).text().trim()));
+      console.log(`Row ${i}:`, cellTexts);
+    }
+    
+    if (i === 0) return; // Skip header
+    
+    if (cells.length >= 3) {
+      const player = $(cells[0]).text().trim();
+      const level = $(cells[1]).text().trim();
+      const killer = $(cells[2]).text().trim();
+      const time = cells.length > 3 ? $(cells[3]).text().trim() : 'Recently';
       
-      const cells = $(element).find('td');
-      if (cells.length >= 3) {
-        const player = $(cells[0]).text().trim();
-        const level = $(cells[1]).text().trim();
-        const killer = $(cells[2]).text().trim();
-        const time = cells.length > 3 ? $(cells[3]).text().trim() : 'Recently';
-        
-        if (player && level && player.length > 2) {
-          deaths.push({
-            player,
-            level: parseInt(level) || 0,
-            killer,
-            time,
-            timestamp: Date.now(),
-            id: `${player}-${level}-${killer}-${time}`
-          });
-        }
+      if (player && level && player.length > 2) {
+        deaths.push({
+          player,
+          level: parseInt(level) || 0,
+          killer,
+          time,
+          timestamp: Date.now(),
+          id: `${player}-${level}-${killer}-${time}`
+        });
       }
-    });
+    }
+  });
 
-    return deaths.slice(0, 20); // Keep last 20 deaths
-  }
+  console.log('=== END DEBUG ===');
+  return deaths.slice(0, 20);
+}
 
   async saveData(filename, data) {
     await fs.mkdir(this.dataDir, { recursive: true });
