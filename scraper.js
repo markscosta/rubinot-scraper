@@ -1,4 +1,4 @@
-const { FirecrawlApp } = require('@mendable/firecrawl-js');
+const FirecrawlApp = require('@mendable/firecrawl-js').default;
 const fs = require('fs').promises;
 const path = require('path');
 
