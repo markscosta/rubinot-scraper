@@ -10,59 +10,47 @@ class RubinOTScraper {
     this.dataDir = path.join(__dirname, 'data');
   }
 
-  async scrapeDeaths() {
-  try {
-    console.log(`Scraping deaths for world: Mystian`);
-    
-    const result = await this.firecrawl.scrapeUrl('https://rubinot.com.br/?subtopic=latestdeaths', {
-      formats: ['html'],
-      waitFor: 5000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      actions: [
-        {
-          type: 'wait',
-          milliseconds: 2000
-        },
-        {
-          type: 'click',
-          selector: 'select[name="world"]'
-        },
-        {
-          type: 'select',
-          selector: 'select[name="world"]',
-          value: 'Mystian'
-        },
-        {
-          type: 'wait', 
-          milliseconds: 3000
-        },
-        {
-          type: 'click',
-          selector: 'input[type="submit"], button[type="submit"], .submit'
-        },
-        {
-          type: 'wait',
-          milliseconds: 4000
-        }
-      ]
-    });
+ async scrapeDeaths() {
+  // Try direct URLs that might bypass the dropdown
+  const urls = [
+    'https://rubinot.com.br/?subtopic=latestdeaths&world=Mystian',
+    'https://rubinot.com.br/index.php?subtopic=latestdeaths&world=Mystian',
+    'https://rubinot.com.br/?subtopic=killstatistics&world=Mystian',
+    'https://rubinot.com.br/?subtopic=latestdeaths',
+  ];
 
-    if (result?.html) {
-      console.log(`Got HTML for Mystian, length: ${result.html.length}`);
-      const deaths = this.parseDeathsHTML(result.html);
-      if (deaths.length > 0) {
-        console.log(`Found ${deaths.length} deaths for Mystian world`);
-        return deaths;
-      } else {
-        console.log('No deaths found for Mystian world');
+  for (const url of urls) {
+    try {
+      console.log(`Trying URL: ${url}`);
+      
+      const result = await this.firecrawl.scrapeUrl(url, {
+        formats: ['html', 'markdown'],
+        waitFor: 8000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      if (result?.html) {
+        console.log(`Got HTML from ${url}, length: ${result.html.length}`);
+        
+        // Also log the markdown to see the content structure
+        if (result.markdown) {
+          console.log('Markdown content preview:', result.markdown.substring(0, 1000));
+        }
+        
+        const deaths = this.parseDeathsHTML(result.html);
+        if (deaths.length > 0) {
+          console.log(`Found ${deaths.length} deaths from ${url}`);
+          return deaths;
+        }
       }
+    } catch (error) {
+      console.error(`Failed to scrape ${url}:`, error.message);
     }
-  } catch (error) {
-    console.error(`Failed to scrape Mystian world:`, error.message);
   }
   
+  console.log('No deaths found from any URL');
   return [];
 }
 
