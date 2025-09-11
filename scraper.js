@@ -11,38 +11,60 @@ class RubinOTScraper {
   }
 
   async scrapeDeaths() {
-    const urls = [
-      'https://rubinot.com.br/?subtopic=latestdeaths',
-      'https://rubinot.com.br/?subtopic=latestdeaths&world=Auroria',
-      'https://rubinot.com.br/?subtopic=killstatistics'
-    ];
-
-    for (const url of urls) {
-      try {
-        console.log(`Scraping deaths from: ${url}`);
-        
-        const result = await this.firecrawl.scrapeUrl(url, {
-          formats: ['html'],
-          waitFor: 3000,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; RubinOTBot/1.0)'
-          }
-        });
-
-        if (result?.html) {
-          const deaths = this.parseDeathsHTML(result.html);
-          if (deaths.length > 0) {
-            console.log(`Found ${deaths.length} deaths`);
-            return deaths;
-          }
+  try {
+    console.log(`Scraping deaths for world: Mystian`);
+    
+    const result = await this.firecrawl.scrapeUrl('https://rubinot.com.br/?subtopic=latestdeaths', {
+      formats: ['html'],
+      waitFor: 5000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      actions: [
+        {
+          type: 'wait',
+          milliseconds: 2000
+        },
+        {
+          type: 'click',
+          selector: 'select[name="world"]'
+        },
+        {
+          type: 'select',
+          selector: 'select[name="world"]',
+          value: 'Mystian'
+        },
+        {
+          type: 'wait', 
+          milliseconds: 3000
+        },
+        {
+          type: 'click',
+          selector: 'input[type="submit"], button[type="submit"], .submit'
+        },
+        {
+          type: 'wait',
+          milliseconds: 4000
         }
-      } catch (error) {
-        console.error(`Failed to scrape ${url}:`, error.message);
+      ]
+    });
+
+    if (result?.html) {
+      console.log(`Got HTML for Mystian, length: ${result.html.length}`);
+      const deaths = this.parseDeathsHTML(result.html);
+      if (deaths.length > 0) {
+        console.log(`Found ${deaths.length} deaths for Mystian world`);
+        return deaths;
+      } else {
+        console.log('No deaths found for Mystian world');
       }
     }
-    
-    return [];
+  } catch (error) {
+    console.error(`Failed to scrape Mystian world:`, error.message);
   }
+  
+  return [];
+}
 
   parseDeathsHTML(html) {
   const cheerio = require('cheerio');
